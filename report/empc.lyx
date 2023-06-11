@@ -1,0 +1,3120 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage[final]{nips_2016}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2016}
+
+%\usepackage[utf8]{inputenc} % allow utf-8 input
+%\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{smartdiagram}
+
+\usepackage{mathbbol}
+ 
+\usepackage{listings}
+\usepackage{xcolor}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+
+\usepackage{algorithm,algpseudocode}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package babel
+\inputencoding utf8
+\fontencoding T1
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype true
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement H
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type numerical
+\biblio_style plainnat
+\biblatex_bibstyle trad-unsrt
+\biblatex_citestyle numeric
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+EE364B Project Report: Embedded MPC
+\end_layout
+
+\begin_layout Author
+Philippe Weingertner
+\begin_inset Newline newline
+\end_inset
+
+ 
+\family typewriter
+pweinger@stanford.edu
+\family default
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+We study methods for accelerating Model Predictive Control (MPC) solutions
+ to make them suitable for real-time robotics applications.
+ For embedded devices, reliability, determinism, and real-time performances
+ are of paramount importance 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "eMPCSPace2014"
+literal "false"
+
+\end_inset
+
+.
+ Embedded MPC solutions correspond to a growing commercial market with companies
+ like 
+\begin_inset CommandInset href
+LatexCommand href
+name "odys"
+target "https://www.odys.it/embedded-mpc/"
+literal "false"
+
+\end_inset
+
+, and 
+\begin_inset CommandInset href
+LatexCommand href
+name "embotech"
+target "https://www.embotech.com/products/forcespro/overview/"
+literal "false"
+
+\end_inset
+
+.
+ We can exploit structure in the MPC problem 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "FastMPC2010,MPCMhz2014,CvxOptim2004"
+literal "false"
+
+\end_inset
+
+ to get fast MPC solutions.
+ 
+\end_layout
+
+\begin_layout Standard
+Our project features a summary of existing methods, an efficient implementation
+ of Accelerated Dual Gradient Project algorithm (DGPA), an improvement over
+ an existing DGPA algorithm, and a benchmark with off-the-shell Interior
+ Point solvers on a constrained and ill-conditioned tracking MPC problem.
+\end_layout
+
+\begin_layout Section
+Problem Statement
+\end_layout
+
+\begin_layout Standard
+We formulate a convex-embedded MPC tracking problem as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{x,u}{\min} & \frac{1}{2}\stackrel[k=0]{N-1}{\sum}\left(\left(x_{k}-x_{k}^{\text{ref}}\right)^{T}Q\left(x_{k}-x_{k}^{\text{ref}}\right)+u_{k}^{T}Ru_{k}\right)+\frac{1}{2}\left(x_{N}-x_{N}^{\text{ref}}\right)^{T}Q_{N}\left(x_{N}-x_{N}^{\text{ref}}\right)\\
+\text{s.t.} & \begin{array}{cc}
+x_{0}=x_{\text{init}}\end{array}\\
+ & \begin{array}{cc}
+x_{k+1}=Ax_{k}+Bu_{k} & k=0,\ldots,N-1\end{array}\\
+ & \begin{array}{cc}
+y_{\min}\leq Cx_{k}\leq y_{\max} & k=0,\ldots,N\end{array}\\
+ & \begin{array}{cc}
+u_{\min}\leq u_{k}\leq u_{\max} & k=0,\ldots,N-1\end{array}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $A,B$
+\end_inset
+
+ correspond to linearized dynamics, 
+\begin_inset Formula $x_{k}\in\mathbb{R}^{n},u_{k}\in\mathbb{R}^{m},Q,Q_{N}\in S_{++}^{n},R\in S_{++}^{m},A\in\mathbb{R}^{n\times n},B\in\mathbb{R}^{n\times m}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We rewrite the problem in the following form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{z}{\text{minimize}} & \frac{1}{2}z^{T}Hz\\
+s.t. & A_{e}z=b_{e}\\
+ & A_{i}z\leq b_{i}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $z=\left(x_{0}-x_{0}^{\text{ref}},u_{0},\ldots,x_{N-1}-x_{N-1}^{\text{ref}},u_{N-1},x_{N}-x_{N}^{\text{ref}}\right)$
+\end_inset
+
+ and
+\end_layout
+
+\begin_layout Standard
+
+\size tiny
+\begin_inset Formula $H=\begin{bmatrix}W & 0 & 0 & 0\\
+0 & \ddots & 0 & 0\\
+0 & 0 & W & 0\\
+0 & 0 & 0 & Q_{N}
+\end{bmatrix},W=\begin{bmatrix}Q & 0\\
+0 & R
+\end{bmatrix},A_{e}=\begin{bmatrix}I & 0 & 0 & \cdots & \cdots & 0\\
+-A & -B & I & 0 & \cdots & 0\\
+0 & -A & -B & I & \ddots & \vdots\\
+\vdots & \ddots & \ddots & \ddots & \ddots & 0\\
+0 & 0 & \cdots & -A & -B & I
+\end{bmatrix},b_{e}=\begin{bmatrix}x_{\text{init}}-x_{0}^{\text{ref}}\\
+Ax_{0}^{\text{ref}}-x_{1}^{\text{ref}}\\
+Ax_{1}^{\text{ref}}-x_{2}^{\text{ref}}\\
+\vdots\\
+Ax_{N-1}^{\text{ref}}-x_{N}^{\text{ref}}
+\end{bmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size tiny
+\begin_inset Formula $\tilde{A}_{i}=\begin{bmatrix}C\\
+ & I_{m}\\
+ &  & \ddots\\
+ &  &  & C\\
+ &  &  &  & I_{m}\\
+ &  &  &  &  & C
+\end{bmatrix},b_{i_{1}}=\begin{bmatrix}y_{\max}-Cx_{0}^{\text{ref}}\\
+u_{\max}\\
+\vdots\\
+y_{\max}-Cx_{N-1}^{\text{ref}}\\
+u_{\max}\\
+y_{\max}-Cx_{N}^{\text{ref}}
+\end{bmatrix},b_{i_{2}}=\begin{bmatrix}-y_{\min}+Cx_{0}^{\text{ref}}\\
+-u_{\min}\\
+\vdots\\
+-y_{\min}+Cx_{N-1}^{\text{ref}}\\
+-u_{\min}\\
+-y_{\min}+Cx_{N}^{\text{ref}}
+\end{bmatrix},A_{i}=\begin{bmatrix}\tilde{A}_{i}\\
+-\tilde{A}_{i}
+\end{bmatrix},b_{i}=\begin{bmatrix}b_{i_{1}}\\
+b_{i_{2}}
+\end{bmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The two problems are equivalent, from the 
+\begin_inset Formula $z$
+\end_inset
+
+ vector we then retrieve 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $u$
+\end_inset
+
+ vectors.
+\end_layout
+
+\begin_layout Section
+Dual Projected Gradient Approach
+\end_layout
+
+\begin_layout Standard
+Among the algorithms used to solve MPC problems, active set 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Ferreau2014qpOASESAP"
+literal "false"
+
+\end_inset
+
+ and interior point methods 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "FastMPC2010"
+literal "false"
+
+\end_inset
+
+ are very popular.
+ Their convergence rate is known in theory, but they are over-conservative.
+ Fast Gradient Methods have a convergence speed much closer to the theoretical
+ value 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Nesterov1983AMF,NesterovBook"
+literal "false"
+
+\end_inset
+
+.
+ It may be advantageous for embedded solutions where predictability and
+ determinism are essential.
+ These methods rely on straightforward arithmetic operations, and the core
+ iterative loop reduces to a few matrix-vector multiplications.
+ With the growing adoption of GPUs, even on embedded platforms, this may
+ also become an advantage.
+ Off-the-shell Interior Point solvers are not optimized to benefit from
+ GPU capabilities.
+ In any case, Active Set, Interior Point, ADMM 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ADMMMPC2021,ADMMMPC_Rey2021"
+literal "false"
+
+\end_inset
+
+, and Fast Gradient methods 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DualGradientProjection2014"
+literal "false"
+
+\end_inset
+
+ are candidates for Fast Embedded MPC applications, and each may have its
+ sweet spot.
+ In this project, we study  Fast Gradient Methods.
+ We consider a dual approach as the projection related to the inequalities
+ constraints is efficiently handled with a simple projection on the positive
+ orthant.
+ We provide a step-by-step derivation of DGPA algorithms, review variations,
+ and propose two extensions.
+ The proposed algorithm does not depend on hyperparameters tuning, which
+ is also an advantage.
+\end_layout
+
+\begin_layout Standard
+The Lagrangian of the problem is 
+\begin_inset Formula 
+\[
+L\left(z,\lambda\right)=\frac{1}{2}z^{T}Hz+\lambda^{T}\left(A_{i}z-b_{i}\right)
+\]
+
+\end_inset
+
+ with 
+\begin_inset Formula $\lambda\geq0$
+\end_inset
+
+.
+ The dual function is 
+\begin_inset Formula 
+\[
+g\left(\lambda\right)=\underset{z\mid A_{e}z=b_{e}}{\inf}\frac{1}{2}z^{T}Hz+\lambda^{T}\left(A_{i}z-b_{i}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The inner  problem we have to solve, given some 
+\begin_inset Formula $\lambda$
+\end_inset
+
+, is: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{z}{\text{minimize}} & \frac{1}{2}z^{T}Hz+\lambda^{T}\left(A_{i}z-b_{i}\right)\\
+s.t. & A_{e}z=b_{e}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is a Quadratic Problem (QP) with linear equality constraints.
+ We solve it by applying the KKT conditions.
+ The Lagrangian of the sub problem is 
+\begin_inset Formula 
+\[
+L_{inner}\left(z,\nu\right)=\frac{1}{2}z^{T}Hz+\lambda^{T}\left(A_{i}z-b_{i}\right)+\nu^{T}\left(A_{e}z-b_{e}\right)
+\]
+
+\end_inset
+
+ The KKT conditions lead to 
+\begin_inset Formula 
+\[
+\nabla_{z}L_{inner}\left(z,\nu\right)=0,\nabla_{\nu}L_{inner}\left(z,\nu\right)=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We solve the KKT system 
+\begin_inset Formula $\begin{bmatrix}H & A_{e}^{T}\\
+A_{e} & 0
+\end{bmatrix}\begin{bmatrix}z\\
+\nu
+\end{bmatrix}=\begin{bmatrix}-A_{i}^{T}\lambda\\
+b_{e}
+\end{bmatrix}$
+\end_inset
+
+ by elimination.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $H$
+\end_inset
+
+ is a diagonal matrix.
+ We get an analytical solution: 
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z^{*}\left(\lambda\right)=-H^{-1}A_{e}^{T}\left(-H_{A}^{-1}\left(b_{e}+A_{e}H^{-1}A_{i}^{T}\lambda\right)\right)-H^{-1}A_{i}^{T}\lambda
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can precompute 
+\begin_inset Formula $H_{A}^{-1}$
+\end_inset
+
+ by Cholesky factorization in 
+\begin_inset Formula $\mathcal{O}\left(\left(\left(N+1\right)n\right)^{3}\right)$
+\end_inset
+
+ as 
+\begin_inset Formula $H_{A}\in\mathbb{R}^{\left(N+1\right)n\times\left(N+1\right)n}$
+\end_inset
+
+.
+ In the formula of 
+\begin_inset Formula $z^{*}\left(\lambda\right)$
+\end_inset
+
+, all terms not dependent on 
+\begin_inset Formula $\lambda,$
+\end_inset
+
+ can also be precomputed and cached.
+ Thus we get:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z^{*}\left(\lambda\right)=H^{-1}A_{e}^{T}H_{A}^{-1}b_{e}+\left(H^{-1}A_{e}^{T}H_{A}^{-1}A_{e}H^{-1}A_{i}^{T}-H^{-1}A_{i}^{T}\right)\lambda
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Which is implemented as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\begin{array}{c}
+z^{*}\left(\lambda\right)=Z_{0}+Z_{1}\lambda\\
+Z_{0}=H^{-1}A_{e}^{T}H_{A}^{-1}b_{e},Z_{1}=H^{-1}A_{e}^{T}H_{A}^{-1}A_{e}H^{-1}A_{i}^{T}-H^{-1}A_{i}^{T}
+\end{array}\label{eq:zstar_Z0_Z1}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+ Solving the inner sub problem is very fast: a matrix multiplication followed
+ by a matrix addition.
+ 
+\end_layout
+
+\begin_layout Standard
+For the dual function 
+\begin_inset Formula 
+\[
+g\left(\lambda\right)=\underset{z\mid A_{e}z=b_{e}}{\inf}\frac{1}{2}z^{T}Hz+\lambda^{T}\left(A_{i}z-b_{i}\right)
+\]
+
+\end_inset
+
+ We get
+\begin_inset Formula 
+\begin{equation}
+g\left(\lambda\right)=\frac{1}{2}z^{*}\left(\lambda\right)^{T}Hz^{*}\left(\lambda\right)+\lambda^{T}\left(A_{i}z^{*}\left(\lambda\right)-b_{i}\right)\label{eq:dual function}
+\end{equation}
+
+\end_inset
+
+We maximize 
+\begin_inset Formula $g\left(\lambda\right)$
+\end_inset
+
+ subject to 
+\begin_inset Formula $\lambda\geq0$
+\end_inset
+
+ .
+ Thus the update rule is: 
+\begin_inset Formula 
+\begin{equation}
+\lambda_{k+1}\leftarrow\left(\lambda_{k}+\frac{1}{L}\left(A_{i}z^{*}\left(\lambda_{k}\right)-b_{i}\right)\right)_{+}\label{eq:lambda update}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $L$
+\end_inset
+
+ is a Lipschitz constant or Lipschitz matrix we will derive next.
+ 
+\end_layout
+
+\begin_layout Standard
+We summarize a first version of the algorithm, a dual projected gradient
+ as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Dual Projected Gradient
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{algorithmic}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Initialize $
+\backslash
+lambda_0$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $H_{A}=A_{e}H^{-1}A_{e}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Compute $H_{A}^{-1}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{0}=H^{-1}A_{e}^{T}H_{A}^{-1}b_{e}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{1}=H^{-1}A_{e}^{T}H_{A}^{-1}A_{e}H^{-1}A_{i}^{T}-H^{-1}A_{i}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+For{$k=0$ to $K_{
+\backslash
+max}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$z_{k}=Z_0+Z_1
+\backslash
+lambda_k$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+lambda_{k+1}=
+\backslash
+left(
+\backslash
+lambda_{k}+
+\backslash
+frac{1}{L}
+\backslash
+left(A_{i}z_{k}-b_{i}
+\backslash
+right)
+\backslash
+right)_{+}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+EndFor
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{algorithmic}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The convergence rate of this algorithm  is 
+\begin_inset Formula $\mathcal{O}\left(\frac{1}{k}\right),$
+\end_inset
+
+ as demonstrated in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "NesterovBook"
+literal "false"
+
+\end_inset
+
+ section 
+\begin_inset Formula $2.1.5$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+A method from Nesterov in 1983 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Nesterov1983AMF"
+literal "false"
+
+\end_inset
+
+ enables a much faster 
+\begin_inset Formula $\mathcal{O}\left(1/k^{2}\right)$
+\end_inset
+
+ convergence rate.
+ These methods are thoroughly treated in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Nesterov1983AMF"
+literal "false"
+
+\end_inset
+
+ section 
+\begin_inset Formula $2.2$
+\end_inset
+
+.
+ The main results are concisely summarized in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Bertsekas2009ConvexOT"
+literal "false"
+
+\end_inset
+
+ section 6.10.2: Gradient Projection with Extrapolation.The method has the
+ form: 
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+y_{k}=x_{k}+\beta_{k}\left(x_{k}-x_{k-1}\right) & \text{extrapolation step}\\
+x_{k+1}=P_{X}\left(y_{k}-\alpha\nabla f\left(y_{k}\right)\right) & \text{gradient projection step}
+\end{array}
+\]
+
+\end_inset
+
+ with 
+\begin_inset Formula $\beta_{k}\in\left(0,1\right)$
+\end_inset
+
+.
+ With the proper choice of 
+\begin_inset Formula $\beta_{k},$
+\end_inset
+
+ the method has iteration complexity 
+\begin_inset Formula $\mathcal{O}\left(1/k^{2}\right)$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\beta_{k}$
+\end_inset
+
+ can be chosen such that 
+\begin_inset Formula $\beta_{k}=\frac{\theta_{k}\left(1-\theta_{k-1}\right)}{\theta_{k-1}}$
+\end_inset
+
+ where the sequence 
+\begin_inset Formula $\left\{ \theta_{k}\right\} $
+\end_inset
+
+ satisfies 
+\begin_inset Formula $\theta_{0}=\theta_{1}\in(0,1]$
+\end_inset
+
+, and 
+\begin_inset Formula $\frac{1-\theta_{k+1}}{\theta_{k+1}^{2}}\leq\frac{1}{\theta_{k}^{2}},\theta_{k}\leq\frac{2}{k+2}$
+\end_inset
+
+.
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Tseng"
+literal "false"
+
+\end_inset
+
+ proposes to use 
+\begin_inset Formula $\theta_{k+1}=\frac{\sqrt{\theta_{k}^{4}+4\theta_{k}^{2}}-\theta_{k}^{2}}{2}$
+\end_inset
+
+ .
+ These formula are applied in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "DualGradientProjection2014"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Accelerated Dual Projected Gradient with 
+\begin_inset Formula $L$
+\end_inset
+
+ set as in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "DualGradientProjection2014"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{algorithmic}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Initialize $
+\backslash
+lambda_0$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Initialize $
+\backslash
+theta_0=
+\backslash
+theta_{-1}=1$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $H_{A}=A_{e}H^{-1}A_{e}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Compute $H_{A}^{-1}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{0}=H^{-1}A_{e}^{T}H_{A}^{-1}b_{e}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{1}=H^{-1}A_{e}^{T}H_{A}^{-1}A_{e}H^{-1}A_{i}^{T}-H^{-1}A_{i}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $L=
+\backslash
+left
+\backslash
+Vert A_{i}H^{-1}A_{i}^{T}
+\backslash
+right
+\backslash
+Vert _{2}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+For{$k=0$ to $K_{
+\backslash
+max}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+beta_{k}=
+\backslash
+frac{
+\backslash
+theta_{k}
+\backslash
+left(1-
+\backslash
+theta_{k-1}
+\backslash
+right)}{
+\backslash
+theta_{k-1}}$ }
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+omega_{k}=
+\backslash
+lambda_k+
+\backslash
+beta_k
+\backslash
+left(
+\backslash
+lambda_k-
+\backslash
+lambda_{k-1}
+\backslash
+right)$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$z_{k}=Z_0+Z_1
+\backslash
+omega_k$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+lambda_{k+1}=
+\backslash
+left(
+\backslash
+omega_{k}+
+\backslash
+frac{1}{L}
+\backslash
+left(A_{i}z_{k}-b_{i}
+\backslash
+right)
+\backslash
+right)_{+}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+theta_{k+1}=
+\backslash
+frac{
+\backslash
+sqrt{
+\backslash
+theta_{k}^{4}+4
+\backslash
+theta_{k}^{2}}-
+\backslash
+theta_{k}^{2}}{2}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+EndFor
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{algorithmic}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These algorithms have a convergence rate of 
+\begin_inset Formula $\mathcal{O}\left(1/k^{2}\right)$
+\end_inset
+
+ assuming the gradient step size is 
+\begin_inset Formula $\alpha=1/L$
+\end_inset
+
+ where 
+\begin_inset Formula $L$
+\end_inset
+
+ is a Lipschitz constant such that 
+\begin_inset Formula $\left\Vert \nabla f\left(x\right)-\nabla f\left(y\right)\right\Vert \leq\left\Vert x-y\right\Vert ,\forall x,y\in X$
+\end_inset
+
+ with 
+\begin_inset Formula $f:\mathbb{R}^{n}\rightarrow\mathbb{R}$
+\end_inset
+
+ a differentiable convex function defined over a closed convex set 
+\begin_inset Formula $X$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+One of the key question is how to derive 
+\begin_inset Formula $L$
+\end_inset
+
+.
+ In 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Giselsson2014ImprovedFD"
+literal "false"
+
+\end_inset
+
+ the notions of strong convexity and Lipschitz continuity of the gradient
+ of convex functions are generalized to account for different curvatures
+ in different directions.
+ For differentiable and convex functions 
+\begin_inset Formula $f:\mathbb{R}^{n}\rightarrow\mathbb{R}$
+\end_inset
+
+ with a Lipschitz continuous gradient with constant 
+\begin_inset Formula $L,$
+\end_inset
+
+ the author generalizes the notion of Lipschitz continuity 
+\begin_inset Formula $f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{L}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}$
+\end_inset
+
+ to 
+\begin_inset Formula $f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{L}^{2}$
+\end_inset
+
+ where 
+\begin_inset Formula $\left\Vert x\right\Vert _{L}=\sqrt{x^{T}Lx}$
+\end_inset
+
+ with 
+\begin_inset Formula $L\in\mathbb{S}_{++}^{n}$
+\end_inset
+
+and the notion of strong convexity 
+\begin_inset Formula $f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{\sigma}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}$
+\end_inset
+
+ to 
+\begin_inset Formula $f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{H}^{2}$
+\end_inset
+
+.
+ These two inequalities provide lower and upper quadratic bounds of the
+ function 
+\begin_inset Formula $f.$
+\end_inset
+
+ By setting 
+\begin_inset Formula $\mathbf{L}=L\mathbf{I}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{H}=\sigma\mathbf{I}$
+\end_inset
+
+ we retrieve the original definitions.
+ We replace the constants L and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ by matrices 
+\begin_inset Formula $\mathbf{L}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{H},$
+\end_inset
+
+ which enable gradient updates with different step sizes in different directions.
+ This should provide faster convergence.
+ In 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Giselsson2014ImprovedFD"
+literal "false"
+
+\end_inset
+
+ section 
+\begin_inset Formula $6$
+\end_inset
+
+, an improved fast dual gradient method for solving the problem 
+\begin_inset Formula $\text{minimize\; }\frac{1}{2}y^{T}Hy$
+\end_inset
+
+ subject to 
+\begin_inset Formula $Ay=b,By\leq d$
+\end_inset
+
+ is provided.
+ The author introduces dual variables 
+\begin_inset Formula $\mu$
+\end_inset
+
+ for 
+\begin_inset Formula $By\leq d$
+\end_inset
+
+ which are updated iteratively by 
+\begin_inset Formula $\mu_{k}=\text{prox}_{g}^{\mathbf{L_{\mu}}}\left(v^{k}+\mathbf{L_{\mu}^{-1}}\left(By^{k}-d\right)\right)$
+\end_inset
+
+ where 
+\begin_inset Formula $g=I_{\mathcal{Y}}$
+\end_inset
+
+ is an indicator function on the set 
+\begin_inset Formula $\mathcal{Y=}\left\{ y\mid By\leq d\right\} $
+\end_inset
+
+.
+ By restricting 
+\begin_inset Formula $\mathbf{L_{\mu}}$
+\end_inset
+
+ to be diagonal, this update takes the form: 
+\begin_inset Formula 
+\begin{equation}
+\mu^{k}=\max\left(0,v^{k}+\mathbf{L_{\mu}^{-1}}\left(By^{k}-d\right)\right)\label{eq:Lmu}
+\end{equation}
+
+\end_inset
+
+In the paper different methods to precompute the matrix 
+\begin_inset Formula $\mathbf{L_{\mu}}$
+\end_inset
+
+ are presented.
+ One option is to choose 
+\begin_inset Formula $\boldsymbol{L_{\mu}}$
+\end_inset
+
+ by solving a semi-definite program: 
+\begin_inset Formula $\text{minimize}\text{tr }\mathbf{L_{\mu}}\text{subject to}\mathbf{L_{\mu}}\succeq BH^{-1}B^{T},\mathbf{L_{\mu}}\text{ diagonal}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We propose a method related to the above family of Improved fast Dual Gradient
+ Methods, which are accelerated first-order methods.
+ We further exploit the structure of our problem and introduce an explicit
+ second-order iteration step to update the dual variables.
+ Considering the dual function in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dual function"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ and substituting with 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:zstar_Z0_Z1"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, we get: 
+\begin_inset Formula $g\left(\lambda\right)=\frac{1}{2}\left(Z_{0}+Z_{1}\lambda\right)^{T}H\left(Z_{0}+Z_{1}\lambda\right)+\lambda^{T}\left(A_{i}\left(Z_{0}+Z_{1}\lambda\right)-b_{i}\right)$
+\end_inset
+
+.
+  We recognize a quadratic function in 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ with  Hessian 
+\begin_inset Formula $H_{g}=\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}$
+\end_inset
+
+.
+ We change the first-order gradient update rule of the dual variable in
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:lambda update"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ by a second-order Newton step update 
+\begin_inset Formula $\lambda_{k+1}\leftarrow\left(\lambda_{k}+H_{g}^{-1}\nabla g\left(\lambda_{k}\right)\right)_{+}$
+\end_inset
+
+ where 
+\begin_inset Formula $H_{g}^{-1}=\left(\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}\right)^{-1}$
+\end_inset
+
+ can be precomputed.
+ The Newton update can be related to 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Lmu"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ where 
+\begin_inset Formula $H_{g}^{-1}$
+\end_inset
+
+ is used in place of 
+\begin_inset Formula $\mathbf{L_{\mu}^{-1}}.$
+\end_inset
+
+ Unfortunately this method did not work in our experiments.
+ The condition number of 
+\begin_inset Formula $H_{g}$
+\end_inset
+
+ is above 
+\begin_inset Formula $10^{33}$
+\end_inset
+
+ and we can't apply a Cholesky factorization.
+ As a consequence, we worked out an approximation of either 
+\begin_inset Formula $H_{g}^{-1}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathbf{L_{\mu}^{-1}}$
+\end_inset
+
+ and came up with the following approximation: 
+\begin_inset Formula $\mathbf{L_{\mu}^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+\end_inset
+
+.
+ This approximation is related to the SDP problem 
+\begin_inset Formula $\text{minimize}\;\text{tr }\mathbf{L}$
+\end_inset
+
+ subject to 
+\begin_inset Formula $\mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}$
+\end_inset
+
+ with 
+\begin_inset Formula $L$
+\end_inset
+
+ diagonal which is  one of the SDP method proposed in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Giselsson2014ImprovedFD"
+literal "false"
+
+\end_inset
+
+ to compute the Lipschitz matrix.
+ It works very well in practice.
+ Ultimately, we propose the following algorithm:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Accelerated++ Dual Projected Gradient
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{algorithmic}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Initialize $
+\backslash
+lambda_0$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Initialize $
+\backslash
+theta_0=
+\backslash
+theta_{-1}=1$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $H_{A}=A_{e}H^{-1}A_{e}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Compute $H_{A}^{-1}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{0}=H^{-1}A_{e}^{T}H_{A}^{-1}b_{e}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Set $Z_{1}=H^{-1}A_{e}^{T}H_{A}^{-1}A_{e}H^{-1}A_{i}^{T}-H^{-1}A_{i}^{T}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{Compute $
+\backslash
+mathbf{L}^{-1}=
+\backslash
+text{diag}
+\backslash
+left(A_{i}H^{-1}A_{i}^{T}
+\backslash
+right)^{-1}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+For{$k=0$ to $K_{
+\backslash
+max}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+beta_{k}=
+\backslash
+frac{
+\backslash
+theta_{k}
+\backslash
+left(1-
+\backslash
+theta_{k-1}
+\backslash
+right)}{
+\backslash
+theta_{k-1}}$ }
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+omega_{k}=
+\backslash
+lambda_k+
+\backslash
+beta_k
+\backslash
+left(
+\backslash
+lambda_k-
+\backslash
+lambda_{k-1}
+\backslash
+right)$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$z_{k}=Z_0+Z_1
+\backslash
+omega_k$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+lambda_{k+1}=
+\backslash
+left(
+\backslash
+omega_{k}+
+\backslash
+mathbf{L^{-1}}
+\backslash
+left(A_{i}z_{k}-b_{i}
+\backslash
+right)
+\backslash
+right)_{+}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State{$
+\backslash
+theta_{k+1}=
+\backslash
+frac{
+\backslash
+sqrt{
+\backslash
+theta_{k}^{4}+4
+\backslash
+theta_{k}^{2}}-
+\backslash
+theta_{k}^{2}}{2}$}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+EndFor
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{algorithmic}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Experiments and Results
+\end_layout
+
+\begin_layout Standard
+We implement the code in Julia.
+ We rely on 
+\begin_inset CommandInset href
+LatexCommand href
+name "SparseArrays.jl"
+target "https://sparsearrays.juliasparse.org/dev/"
+literal "false"
+
+\end_inset
+
+ to take advantage of 
+\begin_inset Formula $A_{i},A_{e}$
+\end_inset
+
+ sparsity.
+ While we are interested in applying this algorithm to tracking problems
+ for Autonomous Underwater Vehicles (AUV), the proposed algorithm is evaluated
+ on a AFTI-16 aircraft model as in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Giselsson2014ImprovedFD"
+literal "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "DualGradientProjection2014"
+literal "false"
+
+\end_inset
+
+.
+  We use a linearized version, at 
+\begin_inset Formula $3000$
+\end_inset
+
+ feet altitude and 
+\begin_inset Formula $0.6$
+\end_inset
+
+ mach velocity, of the F16 aircraft longitudinal dynamics.
+ The problem is setup with 
+\begin_inset Formula $x\in\mathbb{R}^{4},u\in\mathbb{R}^{2},y\in\mathbb{R}^{2}$
+\end_inset
+
+, 
+\size tiny
+
+\begin_inset Formula $A=\begin{bmatrix}0.999 & -3.008 & -0.113 & -1.608\\
+0 & 0.986 & 0.048 & 0\\
+0 & 2.083 & 1.009 & 0\\
+0 & 0.053 & 0.05 & 1
+\end{bmatrix},B=\begin{bmatrix}-0.08 & -0.635\\
+-0.029 & -0.014\\
+-0.968 & -0.092\\
+-0.022 & -0.002
+\end{bmatrix},C=\begin{bmatrix}0 & 1 & 0 & 0\\
+0 & 0 & 0 & 1
+\end{bmatrix}$
+\end_inset
+
+ 
+\size default
+, 
+\size tiny
+
+\begin_inset Formula $Q=Q_{N}=\text{diag}\left(\begin{bmatrix}10^{-4} & 10^{2} & 10^{-3} & 10^{2}\end{bmatrix}\right),R=\text{diag}\left(\begin{bmatrix}10^{-2} & 10^{-2}\end{bmatrix}\right)$
+\end_inset
+
+, 
+\begin_inset Formula $\left|u\right|\leq\left(25,25\right)$
+\end_inset
+
+, and 
+\begin_inset Formula $\left|y\right|\leq\left(0.5,100\right)$
+\end_inset
+
+
+\size default
+, leading to 
+\begin_inset Formula $\text{cond}\left(H\right)=10^{6}$
+\end_inset
+
+.
+ The objective is to drive the pitch angle 
+\begin_inset Formula $y_{2}$
+\end_inset
+
+ from 
+\begin_inset Formula $0°$
+\end_inset
+
+ to 
+\begin_inset Formula $10°$
+\end_inset
+
+ and then back to 
+\begin_inset Formula $0^{°}$
+\end_inset
+
+.
+ The control command is given by 
+\begin_inset Formula $u_{1}$
+\end_inset
+
+ an elevator angle and 
+\begin_inset Formula $u_{2}$
+\end_inset
+
+ a flaperon angle.
+ The 
+\begin_inset Formula $y_{1}$
+\end_inset
+
+ output is the angle of attack, and 
+\begin_inset Formula $y_{2}$
+\end_inset
+
+ the pitch angle.
+ The horizon of the MPC problem is given by 
+\begin_inset Formula $N\in\left[10,120\right]$
+\end_inset
+
+ with a time step 
+\begin_inset Formula $T_{s}=0.05s$
+\end_inset
+
+.
+ We generate a tracking trajectory such that the requested pitch angle 
+\begin_inset Formula $y_{2}$
+\end_inset
+
+ is 
+\begin_inset Formula $10°$
+\end_inset
+
+ for 
+\begin_inset Formula $t\in\left[0,\frac{N}{2}T_{s}\right]$
+\end_inset
+
+ and 
+\begin_inset Formula $0°$
+\end_inset
+
+ afterward, and the requested angle of attack 
+\begin_inset Formula $y_{1}$
+\end_inset
+
+ is 
+\begin_inset Formula $0°$
+\end_inset
+
+.
+ This tracking trajectory is not feasible due to the constraint 
+\begin_inset Formula $\left|y_{2}\right|\leq0.5$
+\end_inset
+
+.
+ The constraint on the angle of attack limits the rate of how fast the pitch
+ angle can be changed.
+ We set 
+\begin_inset Formula $x_{\text{init}}$
+\end_inset
+
+ to zero.
+ This problem is ill-conditioned and has open-loop unstable poles.
+ If we solve the problem with a Linear Quadratic Regulator (
+\begin_inset CommandInset href
+LatexCommand href
+name "LQR"
+target "http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf#page=86"
+literal "false"
+
+\end_inset
+
+) method, ignoring the actuators and angle of attack constraints, and then
+ applying actuators clipping, the system becomes unstable.
+ We have to solve the fully constrained optimization problem.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "45text%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/input_ref.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "45text%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/output_ref.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Solution"
+
+\end_inset
+
+MPC solution for 
+\begin_inset Formula $N=120$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We benchmark results with off-the-shell solvers: 
+\begin_inset CommandInset href
+LatexCommand href
+name "ECOS"
+target "https://web.stanford.edu/~boyd/papers/ecos.html"
+literal "false"
+
+\end_inset
+
+ an Interior Point solver designed specifically for embedded applications,
+ and 
+\begin_inset CommandInset href
+LatexCommand href
+name "SCS"
+target "https://web.stanford.edu/~boyd/papers/scs.html"
+literal "false"
+
+\end_inset
+
+.
+ In the figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtimes"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, GPD 
+\begin_inset Formula $Ld$
+\end_inset
+
+ does not benefit from Nesterov acceleration but computes a step size matrix
+  
+\begin_inset Formula $\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+\end_inset
+
+.
+ GPAD Bemporad from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DualGradientProjection2014"
+literal "false"
+
+\end_inset
+
+ uses a fixed step size 
+\begin_inset Formula $\alpha=\left\Vert A_{i}H^{-1}A_{i}^{T}\right\Vert .$
+\end_inset
+
+ GPAD Giselsson from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Giselsson2014ImprovedFD"
+literal "false"
+
+\end_inset
+
+ computes 
+\begin_inset Formula $\mathbf{L^{-1}}$
+\end_inset
+
+ as the solution of a SDP problem: 
+\begin_inset Formula $\text{minimize}\;\text{tr }\mathbf{L}$
+\end_inset
+
+ subject to 
+\begin_inset Formula $\mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}$
+\end_inset
+
+ with 
+\begin_inset Formula $\mathbf{L}$
+\end_inset
+
+ diagonal.
+ In our case, 
+\begin_inset Formula $A_{i}H^{-1}A_{i}^{T}$
+\end_inset
+
+ is a singular matrix while 
+\begin_inset Formula $\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)$
+\end_inset
+
+ is not.
+ In the proposed GPAD algorithm, we simply approximate the solution of the
+ SDP problem with 
+\begin_inset Formula $\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+\end_inset
+
+.
+ We obtain the same solutions in the same number of iterations as GPAD Giselsson
+ method without precomputing the solution of an SDP problem.
+ In MPC tracking problems, the 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ matrix typically changes every time we set up the MPC problem as we re-lineariz
+e nonlinear dynamics models.
+ Thus, in this case, we get a significant speedup.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "45text%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/runtime.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "45text%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/precomp.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtimes"
+
+\end_inset
+
+Solver runtimes
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For all GPAD solvers, the termination criterion is conditioned on a maximum
+ constraint violation below 
+\begin_inset Formula $10^{-5}$
+\end_inset
+
+ or a maximum number of iterations.
+ The proposed GPAD is faster than ECOS except for 
+\begin_inset Formula $N=20$
+\end_inset
+
+.
+ The higher the complexity, the more significant the difference.
+ For 
+\begin_inset Formula $N=100$
+\end_inset
+
+, 
+\begin_inset Formula $\text{GPAD}^{*}$
+\end_inset
+
+ is six times faster while spending a significant % of time, 
+\begin_inset Formula $50\%$
+\end_inset
+
+, in the precomputations.
+ There may still be room for improvement.
+ The solution plots returned by ECOS and the proposed GPAD solvers are the
+ same.
+ The delta in terms of optimal values of 
+\size small
+
+\begin_inset Formula $8e^{-3}$
+\end_inset
+
+ is insignificant from a practical solution point of view.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Comparison with ECOS Interior Point solver
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+
+\size scriptsize
+\begin_inset Tabular
+<lyxtabular version="3" rows="7" columns="8">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $N_{\text{horizon}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $10$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $20$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $40$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $60$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $80$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $100$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $120$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(n_{\text{vars}},m_{\text{constraints}}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(64,128\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(124,248\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(244,488\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(364,728\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(484,968\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(604,1208\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\left(724,1448\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+ECOS ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $2.3$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $4.3$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $12$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $23$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $38$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $59$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $82$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\text{GPAD}^{*}$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $1.7$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $4.9$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $8$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $10$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $10$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $17$
+\end_inset
+
+ ms
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\text{GPAD}^{*}$
+\end_inset
+
+ precomp
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $12\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $38\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $38\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $50\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $50\%$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\text{GPAD}^{*}$
+\end_inset
+
+ iters
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $262$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $479$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $441$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $181$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $204$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $120$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $204$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $f_{\text{opt}}^{\text{gpad}^{*}}-f_{\text{opt}}^{\text{ecos}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $1e^{-7}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $1e^{-7}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $4.5e^{-5}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $1.4e^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $2e^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $8e^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $8e^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discussion and future work
+\end_layout
+
+\begin_layout Standard
+In the above experiments, the Interior Point ECOS solver is not tuned for
+ this specific problem.
+ For a fair comparison with Interior Point methods, we should also study
+ customized Interior Point methods.
+ Concerning GPAD methods, there may still be room for improvement.
+ We could consider using an Augmented Lagrangian and further optimize the
+ precomputations that become dominant for higher complexity problems.
+ However, for the more complex problems, we expect ADMM 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ADMMMPC2021,ADMMMPC_Rey2021"
+literal "false"
+
+\end_inset
+
+ to be even more promising.
+ We also proposed a variation of the DGPA algorithm with a Newton step instead
+ of the gradient update step.
+ Unfortunately, this method did not work in practice as the Hessian matrix
+ 
+\begin_inset Formula $H_{g}$
+\end_inset
+
+ of interest had a terrible condition number of 
+\begin_inset Formula $10^{33}.$
+\end_inset
+
+ We could revisit this idea combined with a preconditioning step 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "7040176"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+We derived an Accelerated Dual Projected Gradient implementation running
+ at 
+\begin_inset Formula $588$
+\end_inset
+
+ Hz for a limited time horizon of 
+\begin_inset Formula $N=10$
+\end_inset
+
+ and 
+\begin_inset Formula $100$
+\end_inset
+
+ Hz for 
+\begin_inset Formula $N=100$
+\end_inset
+
+.
+ The proposed algorithm is up to six times faster than the off-the-shell
+ Interior Point solver ECOS.
+ We exploited the problem structure using sparse matrices, solved KKT by
+ block elimination, performed precomputations, and used acceleration methods.
+ We update the gradient with different step sizes in different directions
+ avoiding hyper-parameter tuning thanks to a simple formula when previous
+ publications relied on solving an SDP problem.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintCited"
+bibfiles "project"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
