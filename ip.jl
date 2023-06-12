@@ -8,16 +8,16 @@ include("afti16.jl")
 
 # Status: it works, but ... slower than ECOS so far ...
 
-function f(z) 
+function f(z::Vector{Float64}) 
 	return (t_bar/2)*z'*H*z-sum(log.(bi - Ai*z))
 end
 
-function gradf(z) 
+function gradf(z::Vector{Float64}) 
 	d = 1 ./ (bi - Ai*z)
 	return t_bar*H*z + Ai'*d
 end
 
-function Hessianf(z) 
+function Hessianf(z::Vector{Float64}) 
 	d = 1 ./ (bi - Ai*z)
 	diagdsquare = Diagonal(d.^2)
 	return t_bar*H + Ai' * diagdsquare * Ai
@@ -32,11 +32,11 @@ end
 #	return f, gradf, Hf
 #end
 
-function residual(z, nu)
+function residual(z::Vector{Float64}, nu::Vector{Float64})
 	return gradf(z) + Ae'*nu, Ae*z - be
 end
 
-function norm_residual(z, nu)
+function norm_residual(z::Vector{Float64}, nu::Vector{Float64})
 	g, h = residual(z, nu)
 	return norm(vcat(g, h))
 end
@@ -44,7 +44,7 @@ end
 # ---------------------------
 # Use a sparse linear solver
 # ---------------------------
-function solve_KKT(z, nu; t=1)
+function solve_KKT(z::Vector{Float64}, nu::Vector{Float64})
 	Hf = Hessianf(z)
 
 	A1 = hcat(Hf, Ae')
@@ -91,7 +91,7 @@ for k_outer in 1:5
 	for k in 1:max_iters
 		global z
 		global nu
-		dz, dnu = solve_KKT(z, nu; t=1)
+		dz, dnu = solve_KKT(z, nu)
 		t = 1
 		while minimum(bi - Ai*(z+t*dz)) <= 0
 			t *= beta
