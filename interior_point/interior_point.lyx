@@ -1,0 +1,821 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Interior Point implementation note
+\end_layout
+
+\begin_layout Standard
+General form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{x}{\text{minimize}} & f_{0}\left(x\right)\\
+\text{s.t.} & f_{i}\left(x\right)\leq0\\
+ & Ax=b
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Centering Problem with log-barrier:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{x}{\text{minimize}} & f_{0}\left(x\right)-\frac{1}{t}\stackrel[i=1]{m}{\sum}\log\left(-f_{i}\left(x\right)\right)\\
+\text{s.t.} & Ax=b
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Our case:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{z}{\text{minimize}} & \frac{1}{2}z^{T}Hz\\
+s.t. & A_{i}z\leq b_{i}\\
+ & A_{e}z=b_{e}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $z=\left(x_{0}-x_{0}^{\text{ref}},u_{0},\ldots,x_{N-1}-x_{N-1}^{\text{ref}},u_{N-1},x_{N}-x_{N}^{\text{ref}}\right)$
+\end_inset
+
+ and
+\end_layout
+
+\begin_layout Standard
+
+\size tiny
+\begin_inset Formula $H=\begin{bmatrix}W & 0 & 0 & 0\\
+0 & \ddots & 0 & 0\\
+0 & 0 & W & 0\\
+0 & 0 & 0 & Q_{N}
+\end{bmatrix},W=\begin{bmatrix}Q & 0\\
+0 & R
+\end{bmatrix},A_{e}=\begin{bmatrix}I & 0 & 0 & \cdots & \cdots & 0\\
+-A & -B & I & 0 & \cdots & 0\\
+0 & -A & -B & I & \ddots & \vdots\\
+\vdots & \ddots & \ddots & \ddots & \ddots & 0\\
+0 & 0 & \cdots & -A & -B & I
+\end{bmatrix},b_{e}=\begin{bmatrix}x_{\text{init}}-x_{0}^{\text{ref}}\\
+Ax_{0}^{\text{ref}}-x_{1}^{\text{ref}}\\
+Ax_{1}^{\text{ref}}-x_{2}^{\text{ref}}\\
+\vdots\\
+Ax_{N-1}^{\text{ref}}-x_{N}^{\text{ref}}
+\end{bmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size tiny
+\begin_inset Formula $\tilde{A}_{i}=\begin{bmatrix}C\\
+ & I_{m}\\
+ &  & \ddots\\
+ &  &  & C\\
+ &  &  &  & I_{m}\\
+ &  &  &  &  & C
+\end{bmatrix},b_{i_{1}}=\begin{bmatrix}y_{\max}-Cx_{0}^{\text{ref}}\\
+u_{\max}\\
+\vdots\\
+y_{\max}-Cx_{N-1}^{\text{ref}}\\
+u_{\max}\\
+y_{\max}-Cx_{N}^{\text{ref}}
+\end{bmatrix},b_{i_{2}}=\begin{bmatrix}-y_{\min}+Cx_{0}^{\text{ref}}\\
+-u_{\min}\\
+\vdots\\
+-y_{\min}+Cx_{N-1}^{\text{ref}}\\
+-u_{\min}\\
+-y_{\min}+Cx_{N}^{\text{ref}}
+\end{bmatrix},A_{i}=\begin{bmatrix}\tilde{A}_{i}\\
+-\tilde{A}_{i}
+\end{bmatrix},b_{i}=\begin{bmatrix}b_{i_{1}}\\
+b_{i_{2}}
+\end{bmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Infeasible start Newton Method for MPC centering problem
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+We apply a log-barrier penalty:
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{z}{\text{minimize}} & \frac{1}{2}z^{T}Hz-\frac{1}{t}\stackrel[i=1]{m}{\sum}\log\left(b_{i}-a_{i}^{T}z\right)\\
+\text{s.t.} & A_{e}z=b_{e}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $a_{i}^{T}$
+\end_inset
+
+ is the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ row of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $t>0$
+\end_inset
+
+ is a parameter that sets the accuracy of the approximation.
+ As 
+\begin_inset Formula $t$
+\end_inset
+
+ increases the approximation becomes more accurate
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\series bold
+Centering Path problem:
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cc}
+\underset{z}{\text{minimize}} & \frac{t}{2}z^{T}Hz-\stackrel[i=1]{m}{\sum}\log\left(b_{i}-a_{i}^{T}z\right)\\
+\text{s.t.} & A_{e}z=b_{e}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We note 
+\begin_inset Formula $f\left(z\right)=f_{0}\left(z\right)+\phi\left(z\right)$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $f_{0}\left(z\right)=\frac{t}{2}z^{T}Hz,\phi\left(z\right)=-\stackrel[i=1]{m}{\sum}\log\left(b_{i}-a_{i}^{T}z\right),$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\nabla f_{0}\left(z\right)=tHz$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\nabla^{2}f_{0}\left(z\right)=tH$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\nabla\phi\left(z\right)=\stackrel[i=1]{m}{\sum}\frac{1}{b_{i}-a_{i}^{T}z}a_{i}=A^{T}d$
+\end_inset
+
+ with 
+\begin_inset Formula $d=\left(\frac{1}{b_{1}-a_{1}^{T}z},\ldots,\frac{1}{b_{m}-a_{m}^{T}z}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\nabla^{2}\phi\left(z\right)=\stackrel[i=1]{m}{\sum}\frac{a_{i}^{T}}{\left(b_{i}-a_{i}^{T}z\right)^{2}}a_{i}=A_{i}^{T}\text{diag}\left(d\right)^{2}A_{i}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We summarize as: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\begin{array}{c}
+\nabla f\left(z\right)=tHz+A_{i}^{T}d\\
+H_{f}=\nabla^{2}f\left(z\right)=tH+A_{i}^{T}\text{diag}\left(d\right)A_{i}\\
+\text{with }d=\left(\frac{1}{b_{1}-a_{1}^{T}z},\ldots,\frac{1}{b_{m}-a_{m}^{T}z}\right)
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+We note that 
+\begin_inset Formula $b_{i}\succ0$
+\end_inset
+
+ when the problem is setup correctly
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This means 
+\begin_inset Formula $z=0\in\text{dom}f$
+\end_inset
+
+ and can be used for starting infeasible start newton method
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\series bold
+We use the primal-dual method computing residual:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Lagrangian is: 
+\begin_inset Formula $L\left(z,\nu\right)=f\left(z\right)+\nu^{\top}\left(A_{e}z-b_{e}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+We want to drive the residuals 
+\begin_inset Formula $\left(\nabla_{z}L,\nabla_{\nu}L\right)$
+\end_inset
+
+ to zero
+\end_layout
+
+\begin_layout Itemize
+We note 
+\begin_inset Formula $y=\left(z,\nu\right),r\left(y\right)=\left(\nabla f\left(z\right)+A_{e}^{\top}\nu,A_{e}z-b_{e}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+We linearize 
+\begin_inset Formula $r\left(y+\Delta y\right)=r\left(y\right)+Dr\left(y\right)\Delta y=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $Dr\left(y\right)=\begin{bmatrix}\nabla^{2}f & A_{e}^{\top}\\
+A_{e} & 0
+\end{bmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+So we get the KKY system
+\begin_inset Formula 
+\[
+\begin{bmatrix}\nabla^{2}f & A_{e}^{\top}\\
+A_{e} & 0
+\end{bmatrix}\begin{bmatrix}\Delta z\\
+\Delta\nu
+\end{bmatrix}=-\begin{bmatrix}\nabla f\left(z\right)+A_{e}^{\top}\nu\\
+A_{e}z-b_{e}
+\end{bmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+
+\color blue
+\begin_inset Formula $H_{f}=\nabla^{2}f$
+\end_inset
+
+ is a diagonal matrix, easy to invert
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+\color blue
+\begin_inset Formula $A_{e}$
+\end_inset
+
+ and 
+\begin_inset Formula $H_{f}$
+\end_inset
+
+ are sparse 
+\end_layout
+
+\begin_layout Itemize
+
+\color blue
+So we can just use a sparse linear solver 
+\begin_inset Formula $\backslash$
+\end_inset
+
+ with SparseArrays.jl
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+We can also solve the KKT system by elimination.
+ 
+\begin_inset Formula $H$
+\end_inset
+
+ is a diagonal matrix
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+H_{f}\Delta z+A_{e}^{\top}\Delta\nu=-g\\
+A_{e}\Delta z=-h
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+\Delta z=-H_{f}^{-1}\left(g+A_{e}^{\top}\Delta\nu\right)\\
+A_{e}\Delta z=-h
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+\Delta z=-H_{f}^{-1}\left(g+A_{e}^{\top}\Delta\nu\right)\\
+-A_{e}H_{f}^{-1}\left(g+A_{e}^{\top}\Delta\nu\right)=-h
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+\Delta z=-H_{f}^{-1}\left(g+A_{e}^{\top}\Delta\nu\right)\\
+-A_{e}H_{f}^{-1}A_{e}^{\top}\Delta\nu=-h+A_{e}H_{f}^{-1}g
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\begin{cases}
+\left(A_{e}H_{f}^{-1}A_{e}^{\top}\right)\Delta\nu=h-A_{e}H_{f}^{-1}g\\
+H_{f}\Delta z=-\left(g+A_{e}^{\top}\Delta\nu\right)
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+As 
+\begin_inset Formula $H_{f}\succ0$
+\end_inset
+
+, we have 
+\begin_inset Formula $A_{e}H_{f}^{-1}A_{e}^{\top}\succ0$
+\end_inset
+
+ Positive Definite (of size 
+\begin_inset Formula $?\times?$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+We can compute by 
+\series bold
+Cholesky factorization
+\series default
+ 
+\begin_inset Formula $AH^{-1}A^{\top}=LL^{\top}$
+\end_inset
+
+ in 
+\begin_inset Formula $\frac{1}{3}?^{3}$
+\end_inset
+
+ flops
+\end_layout
+
+\begin_layout Itemize
+Thus solving the KKT system is 
+\begin_inset Formula $\mathcal{O}\left(?^{3}\right)$
+\end_inset
+
+ to provide the primal and dual Newton steps 
+\begin_inset Formula $\Delta x,\Delta\nu$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\series bold
+Backtracking Line search:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+We used to have for a function 
+\begin_inset Formula $f$
+\end_inset
+
+ , reducing 
+\begin_inset Formula $f$
+\end_inset
+
+ enough along a search direction
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Stopping Condition: 
+\begin_inset Formula $f\left(x+t\Delta x\right)\leq f\left(x\right)+\alpha\nabla f\left(x\right)^{\top}\left(t\Delta x\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Note that 
+\begin_inset Formula $\nabla f\left(x\right)^{\top}\left(t\Delta x\right)\leq0$
+\end_inset
+
+ in a decrease direction
+\end_layout
+
+\begin_layout Itemize
+In words: we accept a decrease in 
+\begin_inset Formula $f$
+\end_inset
+
+ of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ percent of the prediction in the linear extrapolation
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+For the primal-dual method, the norm of the residual decreases in the Newton
+ direction:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\frac{d}{dt}\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}^{2}\bigg\vert_{t=0}=2r\left(y\right)^{\top}Dr\left(y\right)\Delta y_{pd}=-2r\left(y\right)^{\top}r\left(y\right)$
+\end_inset
+
+ as 
+\begin_inset Formula $Dr\left(y\right)\Delta y=-r\left(y\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\frac{d}{dt}\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}^{2}\bigg\vert_{t=0}=-2\left\Vert r\left(y\right)\right\Vert _{2}^{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+As for 
+\begin_inset Formula $h=g\circ f$
+\end_inset
+
+ we have 
+\begin_inset Formula $Dh=Dg\left(f\right)Df$
+\end_inset
+
+ we get
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+With 
+\begin_inset Formula $g=\sqrt{.}$
+\end_inset
+
+ and 
+\begin_inset Formula $f=\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}^{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\frac{d}{dt}\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}\bigg\vert_{t=0}=\frac{d}{dt}\sqrt{\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}^{2}}\bigg\vert_{t=0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\frac{d}{dt}\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}\bigg\vert_{t=0}=\frac{1}{2\sqrt{\left\Vert r\left(y\right)\right\Vert _{2}^{2}}}\left(-2\left\Vert r\left(y\right)\right\Vert _{2}^{2}\right)=-\left\Vert r\left(y\right)\right\Vert _{2}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\frac{d}{dt}\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}\bigg\vert_{t=0}=-\left\Vert r\left(y\right)\right\Vert _{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The Stopping Condition for our merit function is: 
+\end_layout
+
+\begin_layout LyX-Code
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\left\Vert r\left(y+t\Delta y_{pd}\right)\right\Vert _{2}\leq\left\Vert r\left(y\right)\right\Vert _{2}-\alpha t\left\Vert r\left(y\right)\right\Vert _{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/InfeasibleStartNewtonMethod.png
+	lyxscale 65
+	scale 65
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
