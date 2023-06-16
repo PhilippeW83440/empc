@@ -201,8 +201,8 @@ literal "false"
 \begin_layout Standard
 Our project features a summary of existing methods, an efficient implementation
  of Accelerated Dual Gradient Project algorithm (DGPA), an improvement over
- an existing DGPA algorithm, and a benchmark with off-the-shell Interior
- Point solvers on a constrained and ill-conditioned tracking MPC problem.
+ an existing DGPA algorithm, and a benchmark with off-the-shell interior
+ point solvers on a constrained and ill-conditioned tracking MPC problem.
 \end_layout
 
 \begin_layout Section
@@ -231,10 +231,6 @@ u_{\min}\leq u_{k}\leq u_{\max} & k=0,\ldots,N-1\end{array}
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 
 \end_layout
 
@@ -270,16 +266,22 @@ s.t. & A_{e}z=b_{e}\\
 
 \begin_layout Standard
 With 
-\begin_inset Formula $z=\left(x_{0}-x_{0}^{\text{ref}},u_{0},\ldots,x_{N-1}-x_{N-1}^{\text{ref}},u_{N-1},x_{N}-x_{N}^{\text{ref}}\right)$
+\begin_inset Formula 
+\[
+z=\left(x_{0}-x_{0}^{\text{ref}},u_{0},\ldots,x_{N-1}-x_{N-1}^{\text{ref}},u_{N-1},x_{N}-x_{N}^{\text{ref}}\right)
+\]
+
 \end_inset
 
- and
+
 \end_layout
 
 \begin_layout Standard
 
-\size tiny
-\begin_inset Formula $H=\begin{bmatrix}W & 0 & 0 & 0\\
+\size footnotesize
+\begin_inset Formula 
+\[
+H=\begin{bmatrix}W & 0 & 0 & 0\\
 0 & \ddots & 0 & 0\\
 0 & 0 & W & 0\\
 0 & 0 & 0 & Q_{N}
@@ -295,7 +297,9 @@ Ax_{0}^{\text{ref}}-x_{1}^{\text{ref}}\\
 Ax_{1}^{\text{ref}}-x_{2}^{\text{ref}}\\
 \vdots\\
 Ax_{N-1}^{\text{ref}}-x_{N}^{\text{ref}}
-\end{bmatrix}$
+\end{bmatrix}
+\]
+
 \end_inset
 
 
@@ -303,8 +307,10 @@ Ax_{N-1}^{\text{ref}}-x_{N}^{\text{ref}}
 
 \begin_layout Standard
 
-\size tiny
-\begin_inset Formula $\tilde{A}_{i}=\begin{bmatrix}C\\
+\size scriptsize
+\begin_inset Formula 
+\[
+\tilde{A}_{i}=\begin{bmatrix}C\\
  & I_{m}\\
  &  & \ddots\\
  &  &  & C\\
@@ -326,7 +332,9 @@ y_{\max}-Cx_{N}^{\text{ref}}
 -\tilde{A}_{i}
 \end{bmatrix},b_{i}=\begin{bmatrix}b_{i_{1}}\\
 b_{i_{2}}
-\end{bmatrix}$
+\end{bmatrix}
+\]
+
 \end_inset
 
 
@@ -371,7 +379,7 @@ literal "false"
 
  are very popular.
  Their convergence rate is known in theory, but they are over-conservative.
- Fast Gradient Methods have a convergence speed much closer to the theoretical
+ Fast gradient methods have a convergence speed much closer to the theoretical
  value 
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -387,9 +395,9 @@ literal "false"
  iterative loop reduces to a few matrix-vector multiplications.
  With the growing adoption of GPUs, even on embedded platforms, this may
  also become an advantage.
- Off-the-shell Interior Point solvers are not optimized to benefit from
+ Off-the-shell interior point solvers are not optimized to benefit from
  GPU capabilities.
- In any case, Active Set, Interior Point, ADMM 
+ In any case, active set, interior point, ADMM 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "ADMMMPC2021,ADMMMPC_Rey2021"
@@ -397,7 +405,7 @@ literal "false"
 
 \end_inset
 
-, and Fast Gradient methods 
+, and fast gradient methods 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "DualGradientProjection2014"
@@ -405,9 +413,9 @@ literal "false"
 
 \end_inset
 
- are candidates for Fast Embedded MPC applications, and each may have its
+ are candidates for fast embedded MPC applications, and each may have its
  sweet spot.
- In this project, we study  Fast Gradient Methods.
+ In this project, we study fast gradient methods.
  We consider a dual approach as the projection related to the inequalities
  constraints is efficiently handled with a simple projection on the positive
  orthant.
@@ -855,7 +863,11 @@ x_{k+1}=P_{X}\left(y_{k}-\alpha\nabla f\left(y_{k}\right)\right) & \text{gradien
 \end_inset
 
  can be chosen such that 
-\begin_inset Formula $\beta_{k}=\frac{\theta_{k}\left(1-\theta_{k-1}\right)}{\theta_{k-1}}$
+\begin_inset Formula 
+\[
+\beta_{k}=\frac{\theta_{k}\left(1-\theta_{k-1}\right)}{\theta_{k-1}}
+\]
+
 \end_inset
 
  where the sequence 
@@ -863,15 +875,22 @@ x_{k+1}=P_{X}\left(y_{k}-\alpha\nabla f\left(y_{k}\right)\right) & \text{gradien
 \end_inset
 
  satisfies 
-\begin_inset Formula $\theta_{0}=\theta_{1}\in(0,1]$
+\begin_inset Formula 
+\[
+\theta_{0}=\theta_{1}\in(0,1]
+\]
+
 \end_inset
 
-, and 
-\begin_inset Formula $\frac{1-\theta_{k+1}}{\theta_{k+1}^{2}}\leq\frac{1}{\theta_{k}^{2}},\theta_{k}\leq\frac{2}{k+2}$
+and 
+\begin_inset Formula 
+\[
+\frac{1-\theta_{k+1}}{\theta_{k+1}^{2}}\leq\frac{1}{\theta_{k}^{2}},\theta_{k}\leq\frac{2}{k+2}
+\]
+
 \end_inset
 
-.
- 
+
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Tseng"
@@ -880,10 +899,13 @@ literal "false"
 \end_inset
 
  proposes to use 
-\begin_inset Formula $\theta_{k+1}=\frac{\sqrt{\theta_{k}^{4}+4\theta_{k}^{2}}-\theta_{k}^{2}}{2}$
+\begin_inset Formula 
+\[
+\theta_{k+1}=\frac{\sqrt{\theta_{k}^{4}+4\theta_{k}^{2}}-\theta_{k}^{2}}{2}
+\]
+
 \end_inset
 
- .
  These formula are applied in 
 \begin_inset CommandInset citation
 LatexCommand citet
@@ -1137,7 +1159,11 @@ These algorithms have a convergence rate of
 \end_inset
 
  is a Lipschitz constant such that 
-\begin_inset Formula $\left\Vert \nabla f\left(x\right)-\nabla f\left(y\right)\right\Vert \leq\left\Vert x-y\right\Vert ,\forall x,y\in X$
+\begin_inset Formula 
+\[
+\left\Vert \nabla f\left(x\right)-\nabla f\left(y\right)\right\Vert \leq\left\Vert x-y\right\Vert ,\forall x,y\in X
+\]
+
 \end_inset
 
  with 
@@ -1178,44 +1204,59 @@ literal "false"
 \end_inset
 
  the author generalizes the notion of Lipschitz continuity 
-\begin_inset Formula $f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{L}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}$
+\begin_inset Formula 
+\[
+f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{L}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}
+\]
+
 \end_inset
 
  to 
-\begin_inset Formula $f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{L}^{2}$
+\begin_inset Formula 
+\[
+f\left(x_{1}\right)\leq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{L}^{2}
+\]
+
 \end_inset
 
  where 
-\begin_inset Formula $\left\Vert x\right\Vert _{L}=\sqrt{x^{T}Lx}$
-\end_inset
+\begin_inset Formula 
+\[
+\left\Vert x\right\Vert _{L}=\sqrt{x^{T}Lx}\text{ with }L\in\mathbb{S}_{++}^{n}
+\]
 
- with 
-\begin_inset Formula $L\in\mathbb{S}_{++}^{n}$
 \end_inset
 
 and the notion of strong convexity 
-\begin_inset Formula $f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{\sigma}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}$
+\begin_inset Formula 
+\[
+f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{\sigma}{2}\left\Vert x_{1}-x_{2}\right\Vert _{2}^{2}
+\]
+
 \end_inset
 
  to 
-\begin_inset Formula $f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{H}^{2}$
+\begin_inset Formula 
+\[
+f\left(x_{1}\right)\geq f\left(x_{2}\right)+\nabla f\left(x_{2}\right)^{T}\left(x_{1}-x_{2}\right)+\frac{1}{2}\left\Vert x_{1}-x_{2}\right\Vert _{H}^{2}
+\]
+
 \end_inset
 
-.
- These two inequalities provide lower and upper quadratic bounds of the
- function 
+These two inequalities provide lower and upper quadratic bounds of the function
+ 
 \begin_inset Formula $f.$
 \end_inset
 
  By setting 
-\begin_inset Formula $\mathbf{L}=L\mathbf{I}$
+\begin_inset Formula 
+\[
+\mathbf{L}=L\mathbf{I}\text{ and }\mathbf{H}=\sigma\mathbf{I}
+\]
+
 \end_inset
 
- and 
-\begin_inset Formula $\mathbf{H}=\sigma\mathbf{I}$
-\end_inset
-
- we retrieve the original definitions.
+we retrieve the original definitions.
  We replace the constants L and 
 \begin_inset Formula $\sigma$
 \end_inset
@@ -1243,14 +1284,14 @@ literal "false"
 \end_inset
 
 , an improved fast dual gradient method for solving the problem 
-\begin_inset Formula $\text{minimize\; }\frac{1}{2}y^{T}Hy$
+\begin_inset Formula 
+\[
+\text{minimize\; }\frac{1}{2}y^{T}Hy\text{ subject to }Ay=b,By\leq d
+\]
+
 \end_inset
 
- subject to 
-\begin_inset Formula $Ay=b,By\leq d$
-\end_inset
-
- is provided.
+is provided.
  The author introduces dual variables 
 \begin_inset Formula $\mu$
 \end_inset
@@ -1260,7 +1301,11 @@ literal "false"
 \end_inset
 
  which are updated iteratively by 
-\begin_inset Formula $\mu_{k}=\text{prox}_{g}^{\mathbf{L_{\mu}}}\left(v^{k}+\mathbf{L_{\mu}^{-1}}\left(By^{k}-d\right)\right)$
+\begin_inset Formula 
+\[
+\mu_{k}=\text{prox}_{g}^{\mathbf{L_{\mu}}}\left(v^{k}+\mathbf{L_{\mu}^{-1}}\left(By^{k}-d\right)\right)
+\]
+
 \end_inset
 
  where 
@@ -1294,15 +1339,15 @@ In the paper different methods to precompute the matrix
 \end_inset
 
  by solving a semi-definite program: 
-\begin_inset Formula $\text{minimize}\text{tr }\mathbf{L_{\mu}}\text{subject to}\mathbf{L_{\mu}}\succeq BH^{-1}B^{T},\mathbf{L_{\mu}}\text{ diagonal}$
+\begin_inset Formula 
+\[
+\text{minimize}\ \text{tr }\mathbf{L_{\mu}}\text{subject to}\ \mathbf{L_{\mu}}\succeq BH^{-1}B^{T},\mathbf{L_{\mu}}\text{ diagonal}
+\]
+
 \end_inset
 
-.
-\end_layout
-
-\begin_layout Standard
-We propose a method related to the above family of Improved fast Dual Gradient
- Methods, which are accelerated first-order methods.
+We propose a method related to the above family of Improved fast dual gradient
+ methods, which are accelerated first-order methods.
  We further exploit the structure of our problem and introduce an explicit
  second-order iteration step to update the dual variables.
  Considering the dual function in 
@@ -1326,21 +1371,26 @@ noprefix "false"
 \end_inset
 
 , we get: 
-\begin_inset Formula $g\left(\lambda\right)=\frac{1}{2}\left(Z_{0}+Z_{1}\lambda\right)^{T}H\left(Z_{0}+Z_{1}\lambda\right)+\lambda^{T}\left(A_{i}\left(Z_{0}+Z_{1}\lambda\right)-b_{i}\right)$
+\begin_inset Formula 
+\[
+g\left(\lambda\right)=\frac{1}{2}\left(Z_{0}+Z_{1}\lambda\right)^{T}H\left(Z_{0}+Z_{1}\lambda\right)+\lambda^{T}\left(A_{i}\left(Z_{0}+Z_{1}\lambda\right)-b_{i}\right)
+\]
+
 \end_inset
 
-.
-  We recognize a quadratic function in 
+We recognize a quadratic function in 
 \begin_inset Formula $\lambda$
 \end_inset
 
  with  Hessian 
-\begin_inset Formula $H_{g}=\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}$
+\begin_inset Formula 
+\[
+H_{g}=\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}
+\]
+
 \end_inset
 
-.
- We change the first-order gradient update rule of the dual variable in
- 
+We change the first-order gradient update rule of the dual variable in 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:lambda update"
@@ -1351,11 +1401,19 @@ noprefix "false"
 \end_inset
 
  by a second-order Newton step update 
-\begin_inset Formula $\lambda_{k+1}\leftarrow\left(\lambda_{k}+H_{g}^{-1}\nabla g\left(\lambda_{k}\right)\right)_{+}$
+\begin_inset Formula 
+\[
+\lambda_{k+1}\leftarrow\left(\lambda_{k}+H_{g}^{-1}\nabla g\left(\lambda_{k}\right)\right)_{+}
+\]
+
 \end_inset
 
  where 
-\begin_inset Formula $H_{g}^{-1}=\left(\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}\right)^{-1}$
+\begin_inset Formula 
+\[
+H_{g}^{-1}=\left(\frac{1}{2}Z_{1}^{T}HZ_{1}+A_{i}Z_{1}\right)^{-1}
+\]
+
 \end_inset
 
  can be precomputed.
@@ -1396,19 +1454,22 @@ noprefix "false"
 \end_inset
 
  and came up with the following approximation: 
-\begin_inset Formula $\mathbf{L_{\mu}^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+\begin_inset Formula 
+\[
+\mathbf{L_{\mu}^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}
+\]
+
 \end_inset
 
-.
- This approximation is related to the SDP problem 
-\begin_inset Formula $\text{minimize}\;\text{tr }\mathbf{L}$
+This approximation is related to the SDP problem 
+\begin_inset Formula 
+\[
+\text{minimize}\;\text{tr }\mathbf{L}\text{ subject to \mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}}
+\]
+
 \end_inset
 
- subject to 
-\begin_inset Formula $\mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}$
-\end_inset
-
- with 
+with 
 \begin_inset Formula $L$
 \end_inset
 
@@ -1690,13 +1751,17 @@ literal "false"
 
  mach velocity, of the F16 aircraft longitudinal dynamics.
  The problem is setup with 
-\begin_inset Formula $x\in\mathbb{R}^{4},u\in\mathbb{R}^{2},y\in\mathbb{R}^{2}$
+\begin_inset Formula 
+\[
+x\in\mathbb{R}^{4},u\in\mathbb{R}^{2},y\in\mathbb{R}^{2}
+\]
+
 \end_inset
 
-, 
-\size tiny
 
-\begin_inset Formula $A=\begin{bmatrix}0.999 & -3.008 & -0.113 & -1.608\\
+\begin_inset Formula 
+\[
+A=\begin{bmatrix}0.999 & -3.008 & -0.113 & -1.608\\
 0 & 0.986 & 0.048 & 0\\
 0 & 2.083 & 1.009 & 0\\
 0 & 0.053 & 0.05 & 1
@@ -1706,28 +1771,28 @@ literal "false"
 -0.022 & -0.002
 \end{bmatrix},C=\begin{bmatrix}0 & 1 & 0 & 0\\
 0 & 0 & 0 & 1
-\end{bmatrix}$
-\end_inset
+\end{bmatrix}
+\]
 
- 
-\size default
-, 
-\size tiny
-
-\begin_inset Formula $Q=Q_{N}=\text{diag}\left(\begin{bmatrix}10^{-4} & 10^{2} & 10^{-3} & 10^{2}\end{bmatrix}\right),R=\text{diag}\left(\begin{bmatrix}10^{-2} & 10^{-2}\end{bmatrix}\right)$
-\end_inset
-
-, 
-\begin_inset Formula $\left|u\right|\leq\left(25,25\right)$
-\end_inset
-
-, and 
-\begin_inset Formula $\left|y\right|\leq\left(0.5,100\right)$
 \end_inset
 
 
-\size default
-, leading to 
+\begin_inset Formula 
+\[
+Q=Q_{N}=\text{diag}\left(\begin{bmatrix}10^{-4} & 10^{2} & 10^{-3} & 10^{2}\end{bmatrix}\right),R=\text{diag}\left(\begin{bmatrix}10^{-2} & 10^{-2}\end{bmatrix}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left|u\right|\leq\left(25,25\right)\text{ and }\left|y\right|\leq\left(0.5,100\right)
+\]
+
+\end_inset
+
+leading to 
 \begin_inset Formula $\text{cond}\left(H\right)=10^{6}$
 \end_inset
 
@@ -1950,7 +2015,7 @@ literal "false"
 
 \end_inset
 
- an Interior Point solver designed specifically for embedded applications,
+ an interior point solver designed specifically for embedded applications,
  and 
 \begin_inset CommandInset href
 LatexCommand href
@@ -1976,12 +2041,15 @@ noprefix "false"
 \end_inset
 
  does not benefit from Nesterov acceleration but computes a step size matrix
-  
-\begin_inset Formula $\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+ 
+\begin_inset Formula 
+\[
+\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}
+\]
+
 \end_inset
 
-.
- GPAD Bemporad from 
+GPAD Bemporad from 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "DualGradientProjection2014"
@@ -1990,7 +2058,11 @@ literal "false"
 \end_inset
 
  uses a fixed step size 
-\begin_inset Formula $\alpha=\left\Vert A_{i}H^{-1}A_{i}^{T}\right\Vert .$
+\begin_inset Formula 
+\[
+\alpha=\left\Vert A_{i}H^{-1}A_{i}^{T}\right\Vert .
+\]
+
 \end_inset
 
  GPAD Giselsson from 
@@ -2006,11 +2078,11 @@ literal "false"
 \end_inset
 
  as the solution of a SDP problem: 
-\begin_inset Formula $\text{minimize}\;\text{tr }\mathbf{L}$
-\end_inset
+\begin_inset Formula 
+\[
+\text{minimize}\;\text{tr }\mathbf{L}\text{ subject to \mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}}
+\]
 
- subject to 
-\begin_inset Formula $\mathbf{L}\succeq A_{i}H^{-1}A_{i}^{T}$
 \end_inset
 
  with 
@@ -2029,11 +2101,14 @@ literal "false"
  is not.
  In the proposed GPAD algorithm, we simply approximate the solution of the
  SDP problem with 
-\begin_inset Formula $\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}$
+\begin_inset Formula 
+\[
+\mathbf{L^{-1}}=\text{diag}\left(A_{i}H^{-1}A_{i}^{T}\right)^{-1}
+\]
+
 \end_inset
 
-.
- We obtain the same solutions in the same number of iterations as GPAD Giselsson
+We obtain the same solutions in the same number of iterations as GPAD Giselsson
  method without precomputing the solution of an SDP problem.
  In MPC tracking problems, the 
 \begin_inset Formula $A_{i}$
@@ -2196,7 +2271,7 @@ status open
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Comparison with ECOS Interior Point solver
+Comparison with ECOS interior point solver
 \end_layout
 
 \end_inset
@@ -3031,12 +3106,12 @@ Discussion and future work
 \end_layout
 
 \begin_layout Standard
-In the above experiments, the Interior Point ECOS solver is not tuned for
+In the above experiments, the interior point ECOS solver is not tuned for
  this specific problem.
- For a fair comparison with Interior Point methods, we should also study
- customized Interior Point methods.
+ For a fair comparison with interior point methods, we should also study
+ customized interior point methods.
  Concerning GPAD methods, there may still be room for improvement.
- We could consider using an Augmented Lagrangian and further optimize the
+ We could consider using an augmented Lagrangian and further optimize the
  precomputations that become dominant for higher complexity problems.
  However, for the more complex problems, we expect ADMM 
 \begin_inset CommandInset citation
@@ -3093,7 +3168,7 @@ We derived an Accelerated Dual Projected Gradient implementation running
 
 .
  The proposed algorithm is up to six times faster than the off-the-shell
- Interior Point solver ECOS.
+ interior point solver ECOS.
  We exploited the problem structure using sparse matrices, solved KKT by
  block elimination, performed precomputations, and used acceleration methods.
  We update the gradient with different step sizes in different directions
