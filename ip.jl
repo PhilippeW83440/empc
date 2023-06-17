@@ -2,6 +2,7 @@ using SparseArrays
 using Infiltrator
 
 include("afti16.jl")
+include("gpad.jl")
 
 # -----------------------
 # Interior Point method
@@ -47,14 +48,15 @@ end
 # Use a sparse linear solver
 # ---------------------------
 function solve_KKT(z::Vector{Float64}, nu::Vector{Float64})
-	Hf = Hessianf(z)
+	#Hf = Hessianf(z)
+	#A1 = hcat(Hf, Aet)
+	#A2 = hcat(Ae, zeros(n_eqs, n_eqs))
+	#A = vcat(A1, A2)
 
-	A1 = hcat(Hf, Aet)
-	A2 = hcat(Ae, zeros(n_eqs, n_eqs))
-	A = vcat(A1, A2)
-
+	KKT[1:n_vars, 1:n_vars] = Hessianf(z)
 	b = -vcat(gradf(z) + Aet*nu, Ae*z - be)
-	dvar = A \ b # use a sparse linear solver
+
+	dvar = KKT \ b # use a sparse linear solver
 	dz = dvar[1:n_vars]
 	dnu = dvar[n_vars+1:end]
 	return dz, dnu
@@ -77,13 +79,22 @@ x_ref = get_x_ref(N) # Reference trajectory to track
 @time x_opt, u_opt, optval = solveAfti16Model(N, x_init, x_ref)
 getPlots(x_opt, u_opt, x_ref, "ref")
 
-Ai = sparse(Ai)
-Aet = Ae'
-Ae = sparse(Ae)
+@time z, runtime, precomp = solverGPAD(H, Ae, be, Ai, bi; type="Proposed")
+
 
 n_vars = size(H)[1]
 n_eqs = size(Ae)[1]
 n_ineqs = size(Ai)[1]
+
+
+Ai = sparse(Ai)
+Aet = Ae'
+Ae = sparse(Ae)
+
+KKT = zeros(n_vars + n_eqs, n_vars + n_eqs)
+KKT[n_vars+1:end, 1:n_vars] = Ae
+KKT[1:n_vars, n_vars+1:end] = Ae'
+KKT = sparse(KKT)
 
 z = zeros(n_vars)
 nu = zeros(n_eqs)
@@ -117,7 +128,7 @@ for k_outer in 1:5
 		#println("iter $k: t=$t cost=$cost, re=$re ri=$ri")
 	end
 	t2 = time_ns()
-	runtime = (t2-t1)/1.0e6
+	local runtime = (t2-t1)/1.0e6
 	println("	runtime: $runtime ms")
 	local cost = z'*H*z/N
 	local re = norm(Ae*z-be)
@@ -130,4 +141,5 @@ end
 cost = z'*H*z/N
 re = norm(Ae*z-be)
 ri = maximum(Ai*z-bi)
-println("cost=$cost, re=$re ri=$ri")
+printstyled("cost=$cost, re=$re ri=$ri", color=:green)
+
