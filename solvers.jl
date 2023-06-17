@@ -27,7 +27,8 @@ function solverStandard(H::Matrix{Float64}, Ae::Matrix{Float64}, be::Vector{Floa
 	z = vec(z.value)
 	re = norm(Ae*z-be)
 	ri = maximum(Ai*z-bi)
-	println("Solver $type : status = $(problem.status), optval = $(problem.optval/Nsteps), re=$re, ri=$ri")
+	#println("Solver $type : status = $(problem.status), optval = $(problem.optval/Nsteps), re=$re, ri=$ri")
+	printstyled("Solver $type : status = $(problem.status), optval = $(problem.optval/Nsteps), re=$re, ri=$ri\n"; color=:green)
 
 	t3 = time_ns()
 	runtime = (t3-t1)/1.0e6

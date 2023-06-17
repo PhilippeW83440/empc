@@ -3,9 +3,7 @@ include("solvers.jl")
 include("gpad.jl")
 
 #N = 10 # Number of steps (using zero-order hold every 0.05s)
-N= 100
-
-
+N = 100
 x_init = [0.0; 0; 0; 0] # Initial State
 x_ref = get_x_ref(N) # Reference trajectory to track
 

@@ -145,7 +145,7 @@ function solverGPAD(H::Matrix{Float64}, Ae::Matrix{Float64}, be::Vector{Float64}
 
 	re = norm(Ae*z-be)
 	ri = maximum(Ai*z-bi)
-	println("Solver GPAD $type: precomp=$precomp ms, iters=$iters, optval = $(z'*H*z/Nsteps), re=$re, ri=$ri")
+	printstyled("Solver GPAD $type: precomp=$precomp ms, iters=$iters, optval = $(z'*H*z/Nsteps), re=$re, ri=$ri\n"; color = :green)
 	return z, runtime, precomp
 end
 

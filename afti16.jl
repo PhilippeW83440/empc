@@ -335,6 +335,6 @@ function solveAfti16Model(N::Int64, x_init::Vector{Float64}, x_ref::Vector{Vecto
 	#solve!(problem, SCS.Optimizer; silent_solver = true)
 	solve!(problem, ECOS.Optimizer; silent_solver = true)
 
-	println("Solver Afti16Model: status = $(problem.status), optval = $(problem.optval/N)")
+	printstyled("Solver Afti16Model: status = $(problem.status), optval = $(problem.optval/N)\n", color=:green)
 	return x.value, u.value, problem.optval
 end
