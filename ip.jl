@@ -9,7 +9,7 @@ include("gpad.jl")
 # -----------------------
 
 # outer=5 iters=7
-# status N=100 : 103ms vs 60ms ECOS
+# status N=100 : as fast as ECOS
 
 function f(z::Vector{Float64}) 
 	return (1/2)*z'*t_barH*z-sum(log.(bi - Ai*z))
@@ -20,10 +20,13 @@ function gradf(z::Vector{Float64})
 	return t_barH*z + Ai'*d
 end
 
+# Note: the Hessian is Diagonal
 function Hessianf(z::Vector{Float64}) 
 	d = 1 ./ (bi - Ai*z)
 	diagdsquare = Diagonal(d.^2)
 	res = t_barH + Ai' * diagdsquare * Ai
+	#@infiltrate
+	return Diagonal(diag(res))
 	return res
 end
 
@@ -41,13 +44,31 @@ end
 # Use a sparse linear solver
 # ---------------------------
 function solve_KKT(z::Vector{Float64}, nu::Vector{Float64})
-	KKT[1:n_vars, 1:n_vars] = Hessianf(z)
+	Hf = Hessianf(z)
+	KKT[1:n_vars, 1:n_vars] = Hf
 	b = -vcat(gradf(z) + Ae'*nu, Ae*z - be)
 
 	dvar = KKT \ b # use a sparse linear solver
 
 	dz = dvar[1:n_vars]
 	dnu = dvar[n_vars+1:end]
+	return dz, dnu
+end
+
+# Faster
+function solve_KKT_by_block(z::Vector{Float64}, nu::Vector{Float64})
+	g = gradf(z) + Ae'*nu
+	h = Ae*z - be
+
+	Hf = Hessianf(z)
+	Hf_inv = inv(Hf) # fast diag matrix inv
+
+	S = Hf_inv * Ae'
+	g_tmp = Hf_inv * g
+	S = Ae * S
+
+	dnu = S \ (h - Ae * g_tmp)
+	dz = -Hf_inv * (g + Ae'*dnu)
 	return dz, dnu
 end
 
@@ -82,12 +103,15 @@ function solverIP(H::Matrix{Float64}, Ae::Matrix{Float64}, be::Vector{Float64}, 
 	max_iters = 7
 
 	t_bar = 3
+	mu = 50
+
 	global t_barH = H
 	for k_outer in 1:max_outer
 
 		t1 = time_ns()
 		for k in 1:max_iters
-			dz, dnu = solve_KKT(z, nu)
+			#dz, dnu = solve_KKT(z, nu)
+			dz, dnu = solve_KKT_by_block(z, nu)
 			t = 1
 			while minimum(bi - Ai*(z+t*dz)) <= 0
 				t *= beta
@@ -117,7 +141,7 @@ function solverIP(H::Matrix{Float64}, Ae::Matrix{Float64}, be::Vector{Float64}, 
 		local ri = maximum(Ai*z-bi)
 		println("Outer iter $k_outer: cost=$cost, re=$re ri=$ri")
 
-		t_bar *= 50
+		t_bar *= mu
 		global t_barH = t_bar * H
 	end
 
