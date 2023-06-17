@@ -1,4 +1,5 @@
 using SparseArrays
+using Infiltrator
 
 include("afti16.jl")
 
@@ -9,18 +10,19 @@ include("afti16.jl")
 # Status: it works, but ... slower than ECOS so far ...
 
 function f(z::Vector{Float64}) 
-	return (t_bar/2)*z'*H*z-sum(log.(bi - Ai*z))
+	return (1/2)*z'*t_barH*z-sum(log.(bi - Ai*z))
 end
 
 function gradf(z::Vector{Float64}) 
 	d = 1 ./ (bi - Ai*z)
-	return t_bar*H*z + Ai'*d
+	return t_barH*z + Ai'*d
 end
 
 function Hessianf(z::Vector{Float64}) 
 	d = 1 ./ (bi - Ai*z)
 	diagdsquare = Diagonal(d.^2)
-	return t_bar*H + Ai' * diagdsquare * Ai
+	res = t_barH + Ai' * diagdsquare * Ai
+	return res
 end
 
 #function fvals(z; t=1)
@@ -33,7 +35,7 @@ end
 #end
 
 function residual(z::Vector{Float64}, nu::Vector{Float64})
-	return gradf(z) + Ae'*nu, Ae*z - be
+	return gradf(z) + Aet*nu, Ae*z - be
 end
 
 function norm_residual(z::Vector{Float64}, nu::Vector{Float64})
@@ -47,11 +49,11 @@ end
 function solve_KKT(z::Vector{Float64}, nu::Vector{Float64})
 	Hf = Hessianf(z)
 
-	A1 = hcat(Hf, Ae')
+	A1 = hcat(Hf, Aet)
 	A2 = hcat(Ae, zeros(n_eqs, n_eqs))
 	A = vcat(A1, A2)
 
-	b = -vcat(gradf(z) + Ae'*nu, Ae*z - be)
+	b = -vcat(gradf(z) + Aet*nu, Ae*z - be)
 	dvar = A \ b # use a sparse linear solver
 	dz = dvar[1:n_vars]
 	dnu = dvar[n_vars+1:end]
@@ -61,8 +63,8 @@ end
 # ------------------------------------------------------------------------
 
 alpha = 0.01
-beta = 0.3
-max_iters = 20
+beta = 0.9
+max_iters = 7
 epsilon = 1e-6
 
 #N = 10 # Number of steps (using zero-order hold every 0.05s)
@@ -76,6 +78,7 @@ x_ref = get_x_ref(N) # Reference trajectory to track
 getPlots(x_opt, u_opt, x_ref, "ref")
 
 Ai = sparse(Ai)
+Aet = Ae'
 Ae = sparse(Ae)
 
 n_vars = size(H)[1]
@@ -85,7 +88,8 @@ n_ineqs = size(Ai)[1]
 z = zeros(n_vars)
 nu = zeros(n_eqs)
 
-t_bar = 1
+t_bar = 3
+t_barH = H
 for k_outer in 1:5
 	t1 = time_ns()
 	for k in 1:max_iters
@@ -96,7 +100,8 @@ for k_outer in 1:5
 		while minimum(bi - Ai*(z+t*dz)) <= 0
 			t *= beta
 		end
-		while norm_residual(z+t*dz, nu+t*dnu) > (1 - alpha*t) * norm_residual(z, nu)
+		norm_residual_z_nu = norm_residual(z, nu)
+		while norm_residual(z+t*dz, nu+t*dnu) > (1 - alpha*t) * norm_residual_z_nu
 			t *= beta
 		end
 		z = z + t * dz
@@ -106,13 +111,23 @@ for k_outer in 1:5
 			break
 		end
 	
-		cost = z'*H*z/N
-		re = norm(Ae*z-be)
-		ri = maximum(Ai*z-bi)
-		println("iter $k: t=$t cost=$cost, re=$re ri=$ri")
+		#cost = z'*H*z/N
+		#re = norm(Ae*z-be)
+		#ri = maximum(Ai*z-bi)
+		#println("iter $k: t=$t cost=$cost, re=$re ri=$ri")
 	end
 	t2 = time_ns()
 	runtime = (t2-t1)/1.0e6
 	println("	runtime: $runtime ms")
+	local cost = z'*H*z/N
+	local re = norm(Ae*z-be)
+	local ri = maximum(Ai*z-bi)
+	println("Outer iter $k_outer: cost=$cost, re=$re ri=$ri")
 	global t_bar *= 50
+	global t_barH = t_bar * H
 end
+
+cost = z'*H*z/N
+re = norm(Ae*z-be)
+ri = maximum(Ai*z-bi)
+println("cost=$cost, re=$re ri=$ri")
