@@ -1,4 +1,4 @@
-# empc
+# eMPC
 Embedded Model Predictive Control (MPC)
 
 We study methods for accelerating Model Predictive Control (MPC) solutions to make them suitable for real-time robotics applications. 
